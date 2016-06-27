@@ -1287,6 +1287,7 @@ static void TraverseVRGeometry(GF_Node *node, void *rs, Bool is_destroy)
 {
 	GF_TextureHandler *txh;
 	GF_MediaObjectVRInfo vrinfo;
+	GF_MediaObjectAngles angles360;
 	
 	GF_TraverseState *tr_state = (GF_TraverseState *)rs;
 	Drawable3D *stack = (Drawable3D *)gf_node_get_private(node);
@@ -1306,22 +1307,57 @@ static void TraverseVRGeometry(GF_Node *node, void *rs, Bool is_destroy)
 		mesh_reset(stack->mesh);
 		if (! gf_mo_get_srd_info(txh->stream, &vrinfo))
 			return;
-		
-/*		todo - build proper geometry based on VR type
-*/
-		mesh_new_sphere(stack->mesh, -1 * (s32) (vrinfo.scene_width/2), GF_FALSE);
+
+		angles360.tiles = GF_TRUE;
+			
+	        angles360.min_phi = -GF_PI2 + GF_PI * vrinfo.srd_h * vrinfo.srd_y / vrinfo.srd_max_y;
+		angles360.max_phi = -GF_PI2 + GF_PI * vrinfo.srd_h * (1 +  vrinfo.srd_y) / vrinfo.srd_max_y;
+
+		angles360.min_theta = GF_2PI * vrinfo.srd_w * vrinfo.srd_x / vrinfo.srd_max_x;
+		angles360.max_theta = GF_2PI * vrinfo.srd_w * ( 1 + vrinfo.srd_x ) / vrinfo.srd_max_x;
+
+		mesh_new_sphere(stack->mesh, -1 * (s32) (vrinfo.scene_width), GF_FALSE, &angles360);
 		
 		gf_node_dirty_clear(node, GF_SG_NODE_DIRTY);
 	}
 
 	if (tr_state->traversing_mode==TRAVERSE_DRAW_3D) {
+		Bool prevcull = tr_state->cull_flag;
 		DrawAspect2D asp;
+		static u32 frame_num=0;
+		static u32 nb_in=0;
+		static u32 nb_out=0;
+		static u32 nb_inter=0;
 		visual_3d_draw(tr_state, stack->mesh);
 	
 		/*notify decoder/network stack on whether the geometry was visible or not (maybe a % of what is visible would be nicer)*/
 		memset(&asp, 0, sizeof(DrawAspect2D));
 		drawable_get_aspect_2d_mpeg4(node, &asp, tr_state);
-		gf_mo_hint_quality_degradation(asp.fill_texture->stream, 0);
+
+		
+		visual_3d_node_cull(tr_state, &stack->mesh->bounds, GF_FALSE);
+		switch (tr_state->cull_flag) {
+		case CULL_OUTSIDE:
+			nb_out ++;
+			gf_mo_hint_quality_degradation(asp.fill_texture->stream, 100);
+			break;
+		case CULL_INTERSECTS:
+			nb_inter++;
+			gf_mo_hint_quality_degradation(asp.fill_texture->stream, 0);
+			break;
+		case CULL_INSIDE:
+			nb_in++;
+			gf_mo_hint_quality_degradation(asp.fill_texture->stream, 0);
+			break;
+		}
+		if (frame_num != tr_state->visual->compositor->frame_number) {
+			frame_num = tr_state->visual->compositor->frame_number;
+			fprintf(stderr, "Mesh cull: %d in %d out %d inter\n", nb_in, nb_out, nb_inter);
+			nb_in=nb_out=nb_inter=0;
+		}
+		tr_state->cull_flag = prevcull;
+
+
  
 	} else if (tr_state->traversing_mode==TRAVERSE_GET_BOUNDS) {
 		tr_state->bbox = stack->mesh->bounds;
