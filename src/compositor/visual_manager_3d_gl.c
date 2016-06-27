@@ -1604,7 +1604,7 @@ static void visual_3d_draw_aabb_node(GF_TraverseState *tr_state, GF_Mesh *mesh, 
 			}
 		}
 
-		//if (cull==CULL_OUTSIDE) return;
+		if (cull==CULL_OUTSIDE) return;
 
 		if (cull==CULL_INTERSECTS) {
 			visual_3d_draw_aabb_node(tr_state, mesh, prim_type, fplanes, p_indices, n->pos, idx_addr);
