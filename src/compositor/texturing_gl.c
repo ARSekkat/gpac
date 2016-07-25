@@ -1037,6 +1037,8 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 			u32 stride_luma = txh->stride;
 			u32 stride_chroma = txh->stride_chroma;
 			u8 *pY, *pU, *pV;
+			u8 *pY1, *pU1, *pV1;
+			u8 *pY2, *pU2, *pV2;
 			u32 ck;
 			
 			if (txh->frame && txh->frame->GetGLTexture) {
@@ -1069,6 +1071,8 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 			
 			pY = (u8 *) data;
 			pU = pV = NULL;
+			pY1 = (u8 *) data + 3*txh->height*txh->stride/2;
+			pU1 = pV1 = NULL;
 
 			if (txh->raw_memory) {
 				assert(txh->pU);
@@ -1076,6 +1080,7 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 				pV = (u8 *) txh->pV;
 			} else {
 				pU = (u8 *) pY + txh->height*txh->stride;
+				pU1 = (u8 *) pY1 + txh->height*txh->stride;
 			}
 			
 			switch (txh->pixelformat) {
@@ -1099,6 +1104,8 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 					stride_chroma = stride_luma/2;
 				if (!pV)
 					pV = (u8 *) pU + txh->height * stride_chroma / 2;
+				if (!pV1)
+					pV1 = (u8 *) pU1 + txh->height * stride_chroma / 2;
 				break;
 			case GF_PIXEL_NV21:
 			case GF_PIXEL_YPVU:
@@ -1121,9 +1128,21 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 			}
 #endif
 
+			pY2 = (u8*) malloc( 2*2 * txh->height * stride_chroma);
+			pU2 = (u8*) malloc( 2*txh->height * stride_chroma /2 );
+			pV2 = (u8*) malloc( 2*txh->height * stride_chroma /2);
+			
+			memcpy(pY2, pY, txh->height*2 * stride_chroma);
+			memcpy(pY2 + txh->height*2 * stride_chroma , pY1, txh->height*2 * stride_chroma);
+
+			memcpy(pU2, pU, txh->height*2 * stride_chroma/4);
+			memcpy(pU2 + txh->height*2 * stride_chroma/4 , pU1, txh->height*2 * stride_chroma/4);
+
+			memcpy(pV2, pV, txh->height*2 * stride_chroma/4);
+			memcpy(pV2 + txh->height*2 * stride_chroma/4 , pV1, txh->height*2 * stride_chroma/4);
 			push_time = gf_sys_clock();
 
-			do_tex_image_2d(txh, tx_mode, first_load, pY, stride_luma, w, h, txh->tx_io->pbo_id);
+			do_tex_image_2d(txh, tx_mode, first_load, pY2, stride_luma, w, h*2, txh->tx_io->pbo_id);
 			GL_CHECK_ERR
 
 			/*
@@ -1135,17 +1154,17 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 				u32 fmt = txh->tx_io->gl_format;
 				txh->tx_io->gl_format = GL_LUMINANCE_ALPHA;
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->u_id);
-				do_tex_image_2d(txh, GL_LUMINANCE_ALPHA, first_load, pU, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
+				do_tex_image_2d(txh, GL_LUMINANCE_ALPHA, first_load, pU2, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
 				txh->tx_io->gl_format = fmt;
 				GL_CHECK_ERR
 			} 
 			else if (txh->pixelformat == GF_PIXEL_YV12_10 || txh->pixelformat == GF_PIXEL_YV12 ) {
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->u_id);
-				do_tex_image_2d(txh, tx_mode, first_load, pU, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
+				do_tex_image_2d(txh, tx_mode, first_load, pU2, stride_chroma, w/2, h, txh->tx_io->u_pbo_id);
 				GL_CHECK_ERR
 
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->v_id);
-				do_tex_image_2d(txh, tx_mode, first_load, pV, stride_chroma, w/2, h/2, txh->tx_io->v_pbo_id);
+				do_tex_image_2d(txh, tx_mode, first_load, pV2, stride_chroma, w/2, h, txh->tx_io->v_pbo_id);
 				GL_CHECK_ERR
 			}
 			else if (txh->pixelformat == GF_PIXEL_YUV422_10 || txh->pixelformat == GF_PIXEL_YUV422) {

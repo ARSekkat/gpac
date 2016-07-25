@@ -191,7 +191,7 @@ static GF_Err HEVC_ConfigureStream(HEVCDec *ctx, GF_ESD *esd)
 
 	ctx->stride = ((ctx->luma_bpp==8) && (ctx->chroma_bpp==8)) ? ctx->width : ctx->width * 2;
 	if ( ctx->chroma_format_idc  == 1) { // 4:2:0
-		ctx->out_size = ctx->stride * ctx->height * 3 / 2;
+		ctx->out_size = ctx->stride * ctx->height * 3;
 	}
 	else if ( ctx->chroma_format_idc  == 2) { // 4:2:2
 		ctx->out_size = ctx->stride * ctx->height * 2 ;
@@ -426,19 +426,22 @@ static GF_Err HEVC_SetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability capa
 static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLength, u32 *CTS)
 {
 	unsigned int a_w, a_h, a_stride, bit_depth;
-	OpenHevc_Frame_cpy openHevcFrame;
+	OpenHevc_Frame_cpy openHevcFrame, openHevcFrame1;
 	int        chromat_format;
 
-	if (ctx->direct_output)
+	if (ctx->direct_output){
 		libOpenHevcGetPictureInfo(ctx->openHevcHandle, &openHevcFrame.frameInfo);
-	else
+		libOpenHevcGetPictureInfo(ctx->openHevcHandle, &openHevcFrame1.frameInfo);
+	}else{
 		libOpenHevcGetPictureInfoCpy(ctx->openHevcHandle, &openHevcFrame.frameInfo);
+		libOpenHevcGetPictureInfoCpy(ctx->openHevcHandle, &openHevcFrame1.frameInfo);
+	}
 
 	a_w      = openHevcFrame.frameInfo.nWidth;
 	a_h      = openHevcFrame.frameInfo.nHeight;
 	a_stride = openHevcFrame.frameInfo.nYPitch;
 	bit_depth = openHevcFrame.frameInfo.nBitDepth;
-   chromat_format = openHevcFrame.frameInfo.chromat_format;
+   chromat_format = openHevcFrame.frameInfo.color_format;
 	*CTS = (u32) openHevcFrame.frameInfo.nTimeStamp;
      ctx->conv_to_8bit = GF_FALSE;
 	if (!ctx->output_as_8bit) {
@@ -578,8 +581,19 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 		{
 			openHevcFrame.pvV = (void*) (outBuffer + 2*ctx->stride * ctx->height);
 		}
+	openHevcFrame1.pvY = (void*) (outBuffer +  3*ctx->stride * ctx->height/2);
+	openHevcFrame1.pvU = (void*) (outBuffer +  5*ctx->stride * ctx->height/2);
+	openHevcFrame1.pvV = (void*) (outBuffer + 11*ctx->stride * ctx->height/4);
 	*outBufferLength = 0;
+	libOpenHevcSetViewLayers(ctx->openHevcHandle, 1);
+	//libOpenHevcSetActiveDecoders(ctx->openHevcHandle, 0);
 	if (libOpenHevcGetOutputCpy(ctx->openHevcHandle, 1, &openHevcFrame)) {
+		//*outBufferLength = ctx->out_size;
+	}
+
+	libOpenHevcSetViewLayers(ctx->openHevcHandle, 0);
+	//libOpenHevcSetActiveDecoders(ctx->openHevcHandle, 1);
+	if (libOpenHevcGetOutputCpy(ctx->openHevcHandle, 1, &openHevcFrame1)) {
 		*outBufferLength = ctx->out_size;
 	}
 	return GF_OK;
