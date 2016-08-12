@@ -1320,7 +1320,7 @@ void gf_mx_add_scale(GF_Matrix *mat, Fixed sx, Fixed sy, Fixed sz)
 
 	for (i=0; i<3; i++) {
 		for (j=0; j<3; j++) {
-			mat->m[i*4 + j] = gf_mulfix(mat->m[j+4 * i], tmp[i]);
+			mat->m[i*4 + j] = gf_mulfix(mat->m[j+ 4*i], tmp[i]);
 		}
 	}
 }

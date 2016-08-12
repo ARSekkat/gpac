@@ -1073,7 +1073,7 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 			pU = pV = NULL;
 			pY1 = (u8 *) data + 3*txh->height*txh->stride/2;
 			pU1 = pV1 = NULL;
-
+			
 			if (txh->raw_memory) {
 				assert(txh->pU);
 				pU = (u8 *) txh->pU;
@@ -1104,7 +1104,7 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 					stride_chroma = stride_luma/2;
 				if (!pV)
 					pV = (u8 *) pU + txh->height * stride_chroma / 2;
-				if (!pV1)
+				if (!pV1) 
 					pV1 = (u8 *) pU1 + txh->height * stride_chroma / 2;
 				break;
 			case GF_PIXEL_NV21:
@@ -1118,7 +1118,7 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 				pV = NULL;
 				break;
 			}
-
+printf("MOOODDEEEEEEEEEEEEE view = %d\n", txh->compositor->mode_view);
 #if !defined(GPAC_USE_GLES1X) && !defined(GPAC_USE_GLES2)
 		
 			if (txh->pixelformat==GF_PIXEL_YV12_10 || txh->pixelformat==GF_PIXEL_YUV422_10 ||txh->pixelformat==GF_PIXEL_YUV444_10) {
@@ -1140,9 +1140,16 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 
 			memcpy(pV2, pV, txh->height*2 * stride_chroma/4);
 			memcpy(pV2 + txh->height*2 * stride_chroma/4 , pV1, txh->height*2 * stride_chroma/4);
+			
 			push_time = gf_sys_clock();
 
-			do_tex_image_2d(txh, tx_mode, first_load, pY2, stride_luma, w, h*2, txh->tx_io->pbo_id);
+			if (txh->compositor->mode_view == 1){
+				first_load = GF_TRUE;
+				do_tex_image_2d(txh, tx_mode, first_load, pY2, stride_luma, w, h*2, txh->tx_io->pbo_id);
+			}else{
+				//first_load = GF_TRUE;
+				do_tex_image_2d(txh, tx_mode, first_load, pY, stride_luma, w, h, txh->tx_io->pbo_id);
+			}
 			GL_CHECK_ERR
 
 			/*
@@ -1154,17 +1161,29 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 				u32 fmt = txh->tx_io->gl_format;
 				txh->tx_io->gl_format = GL_LUMINANCE_ALPHA;
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->u_id);
-				do_tex_image_2d(txh, GL_LUMINANCE_ALPHA, first_load, pU2, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
+				do_tex_image_2d(txh, GL_LUMINANCE_ALPHA, first_load, pU, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
 				txh->tx_io->gl_format = fmt;
 				GL_CHECK_ERR
 			} 
 			else if (txh->pixelformat == GF_PIXEL_YV12_10 || txh->pixelformat == GF_PIXEL_YV12 ) {
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->u_id);
-				do_tex_image_2d(txh, tx_mode, first_load, pU2, stride_chroma, w/2, h, txh->tx_io->u_pbo_id);
+				if (txh->compositor->mode_view == 1){
+					//first_load = GF_TRUE;
+					do_tex_image_2d(txh, tx_mode, first_load, pU2, stride_chroma, w/2, h, txh->tx_io->u_pbo_id);
+				}else{
+					//first_load = GF_TRUE;
+					do_tex_image_2d(txh, tx_mode, first_load, pU, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
+				}
 				GL_CHECK_ERR
 
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->v_id);
-				do_tex_image_2d(txh, tx_mode, first_load, pV2, stride_chroma, w/2, h, txh->tx_io->v_pbo_id);
+				if (txh->compositor->mode_view == 1){
+					//first_load = GF_TRUE;
+					do_tex_image_2d(txh, tx_mode, first_load, pV2, stride_chroma, w/2, h, txh->tx_io->v_pbo_id);
+				}else{
+					//first_load = GF_TRUE;
+					do_tex_image_2d(txh, tx_mode, first_load, pV, stride_chroma, w/2, h/2, txh->tx_io->v_pbo_id);
+				}
 				GL_CHECK_ERR
 			}
 			else if (txh->pixelformat == GF_PIXEL_YUV422_10 || txh->pixelformat == GF_PIXEL_YUV422) {
@@ -1395,8 +1414,14 @@ void gf_get_tinygl_depth(GF_TextureHandler *txh)
 
 Bool gf_sc_texture_get_transform(GF_TextureHandler *txh, GF_Node *tx_transform, GF_Matrix *mx, Bool for_picking)
 {
+
 	Bool ret = 0;
 	gf_mx_init(*mx);
+
+	if (!txh->compositor->visual->current_view) {
+		gf_mx_add_translation(mx, 0, -0.5f, 0);
+		ret = 1;
+	}
 
 	/*flip image if requested*/
 	if (! (txh->flags & GF_SR_TEXTURE_NO_GL_FLIP) && !(txh->tx_io->flags & TX_IS_FLIPPED) && !for_picking) {

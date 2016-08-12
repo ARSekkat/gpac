@@ -234,7 +234,7 @@ struct __tag_compositor
 	u32 vp_x, vp_y, vp_width, vp_height;
 	/*backbuffer size - in scalable mode, matches display size, otherwise matches scene size*/
 	u32 output_width, output_height;
-
+	u8 mode_view;
 	/*scene size if any*/
 	u32 scene_width, scene_height;
 	Bool has_size_info;

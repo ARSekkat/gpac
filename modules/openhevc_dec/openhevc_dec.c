@@ -462,7 +462,7 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 		ctx->stride = a_stride;
 		ctx->height = a_h;
 		if( chromat_format == YUV420 ) {
-		ctx->out_size = ctx->stride * ctx->height * 3 / 2;
+			ctx->out_size = ctx->stride * ctx->height * 3 / 2;
 		}
 		else if  ( chromat_format == YUV422 ) {
 			ctx->out_size = ctx->stride * ctx->height * 2;

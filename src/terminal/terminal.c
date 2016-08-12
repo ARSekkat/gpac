@@ -2499,6 +2499,7 @@ GF_EXPORT
 void gf_term_switch_quality(GF_Terminal *term, Bool up)
 {
 	gf_scene_switch_quality(term->root_scene, up);
+	term->compositor->mode_view = (up) ? 0 : 1;
 }
 
 GF_EXPORT

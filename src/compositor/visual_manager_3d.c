@@ -566,8 +566,11 @@ void visual_3d_init_draw(GF_TraverseState *tr_state, u32 layer_type)
 			tr_state->camera->vp.y = (INT2FIX(tr_state->visual->compositor->display_height) - tr_state->camera->vp.height)/2;
 
 		} else {
-			tr_state->camera->vp.width = vp_width / tr_state->visual->nb_views;
-			tr_state->camera->vp.x += tr_state->visual->current_view * tr_state->camera->vp.width;
+			if (tr_state->visual->compositor->mode_view){ 
+				tr_state->camera->vp.width = vp_width / tr_state->visual->nb_views;
+				tr_state->camera->vp.height = vp_height * tr_state->visual->nb_views;
+				tr_state->camera->vp.x += tr_state->visual->current_view * tr_state->camera->vp.width;
+			}
 		}
 		//if first view clear up the original vp
 		if (!tr_state->visual->current_view) {
@@ -578,7 +581,7 @@ void visual_3d_init_draw(GF_TraverseState *tr_state, u32 layer_type)
 			visual_3d_set_viewport(tr_state->visual, orig_vp);
 			visual_3d_clear(tr_state->visual, col, 0);
 		}
-
+		
 		visual_3d_set_viewport(tr_state->visual, tr_state->camera->vp);
 		//we must set scissor in side-by-side to avoid drawing the background outside the viewport!
 		visual_3d_set_scissor(tr_state->visual, &tr_state->camera->vp);
@@ -964,7 +967,7 @@ Bool visual_3d_draw_frame(GF_VisualManager *visual, GF_Node *root, GF_TraverseSt
 				tr_state->traversing_mode = TRAVERSE_SORT;
 				gf_sc_traverse_subscene(visual->compositor, root, sg, tr_state);
 			}
-
+			fprintf(stderr, "visual->current_view = %d\n", visual->current_view);
 			if (auto_stereo) {
 				visual_3d_end_auto_stereo_pass(visual);
 			}
