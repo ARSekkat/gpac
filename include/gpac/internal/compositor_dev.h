@@ -224,7 +224,7 @@ struct __tag_compositor
 
 	/*display size*/
 	u32 display_width, display_height;
-
+	
 	/*visual output location on window (we may draw background color outside of it)
 		vp_x & vp_y: horizontal & vertical offset of the drawing area in the video output
 		vp_width & vp_height: width & height of the drawing area
@@ -235,6 +235,8 @@ struct __tag_compositor
 	/*backbuffer size - in scalable mode, matches display size, otherwise matches scene size*/
 	u32 output_width, output_height;
 	u8 mode_view;
+	u32 nb_layers;
+	u8 old_mode_view;
 	/*scene size if any*/
 	u32 scene_width, scene_height;
 	Bool has_size_info;

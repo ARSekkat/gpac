@@ -767,10 +767,12 @@ Bool GPAC_EventProc(void *ptr, GF_Event *evt)
 		case GF_KEY_H:
 			if ((evt->key.flags & GF_KEY_MOD_CTRL) && is_connected)
 				gf_term_switch_quality(term, 1);
+				gf_term_switch_mode(term, 1);
 			break;
 		case GF_KEY_L:
 			if ((evt->key.flags & GF_KEY_MOD_CTRL) && is_connected)
 				gf_term_switch_quality(term, 0);
+				gf_term_switch_mode(term, 0);
 			break;
 		case GF_KEY_F5:
 			if (is_connected)
@@ -1527,7 +1529,7 @@ int mp4client_main(int argc, char **argv)
 		gf_term_set_option(term, GF_OPT_VIDEO_BENCH, (bench_mode==3) ? 2 : 1);
 		if (bench_mode==1) bench_mode=2;
 	}
-
+		
 	if (dump_mode) {
 //		gf_term_set_option(term, GF_OPT_VISIBLE, 0);
 		if (fill_ar) gf_term_set_option(term, GF_OPT_ASPECT_RATIO, GF_ASPECT_RATIO_FILL_SCREEN);
@@ -1681,7 +1683,7 @@ int mp4client_main(int argc, char **argv)
 			continue;
 		}
 		c = gf_prompt_get_char();
-
+		
 force_input:
 		switch (c) {
 		case 'q':

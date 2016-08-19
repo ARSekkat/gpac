@@ -492,6 +492,7 @@ void visual_3d_init_draw(GF_TraverseState *tr_state, u32 layer_type)
 		tr_state->camera->had_nav_info = 1;
 	} else
 #endif
+
 		if (tr_state->camera->had_nav_info) {
 			/*if no navigation specified, use default VRML one*/
 			tr_state->camera->avatar_size.x = FLT2FIX(0.25f);
@@ -566,11 +567,16 @@ void visual_3d_init_draw(GF_TraverseState *tr_state, u32 layer_type)
 			tr_state->camera->vp.y = (INT2FIX(tr_state->visual->compositor->display_height) - tr_state->camera->vp.height)/2;
 
 		} else {
-			if (tr_state->visual->compositor->mode_view){ 
+			if (tr_state->visual->compositor->mode_view && tr_state->visual->compositor->visual->autostereo_type == GF_3D_STEREO_SIDE && tr_state->visual->compositor->visual->nb_views==2 && tr_state->visual->compositor->nb_layers == 2){
 				tr_state->camera->vp.width = vp_width / tr_state->visual->nb_views;
 				tr_state->camera->vp.height = vp_height * tr_state->visual->nb_views;
-				tr_state->camera->vp.x += tr_state->visual->current_view * tr_state->camera->vp.width;
+				tr_state->camera->vp.x += tr_state->visual->current_view * tr_state->camera->vp.width;				
 			}
+			if (tr_state->visual->compositor->nb_layers == 1){
+				tr_state->camera->vp.width = vp_width / tr_state->visual->nb_views;
+				tr_state->camera->vp.x += tr_state->visual->current_view * tr_state->camera->vp.width;		
+			}
+
 		}
 		//if first view clear up the original vp
 		if (!tr_state->visual->current_view) {
@@ -967,7 +973,6 @@ Bool visual_3d_draw_frame(GF_VisualManager *visual, GF_Node *root, GF_TraverseSt
 				tr_state->traversing_mode = TRAVERSE_SORT;
 				gf_sc_traverse_subscene(visual->compositor, root, sg, tr_state);
 			}
-			fprintf(stderr, "visual->current_view = %d\n", visual->current_view);
 			if (auto_stereo) {
 				visual_3d_end_auto_stereo_pass(visual);
 			}

@@ -23,7 +23,6 @@
  *
  */
 
-
 #include "texturing.h"
 #include "visual_manager.h"
 #include "nodes_stacks.h"
@@ -953,9 +952,10 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 	char *data;
 	Bool first_load = 0;
 	GLint tx_mode;
-	u32 pixel_format, w, h;
+	u32 pixel_format, w, h, nb_layers;
 #endif
-
+	gf_get_nblayers(txh->stream, &nb_layers);
+	txh->compositor->nb_layers = nb_layers;
 	if (for2d) {
 		Bool load_tx = 0;
 		if (!txh->data) return 0;
@@ -1004,6 +1004,11 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 
 	if (txh->tx_io->flags & TX_EMULE_FIRST_LOAD) {
 		txh->tx_io->flags &= ~TX_EMULE_FIRST_LOAD;
+		first_load = 1;
+	}
+
+	if (txh->compositor->mode_view != txh->compositor->old_mode_view){
+		txh->compositor->old_mode_view = txh->compositor->mode_view;
 		first_load = 1;
 	}
 
@@ -1071,16 +1076,17 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 			
 			pY = (u8 *) data;
 			pU = pV = NULL;
-			pY1 = (u8 *) data + 3*txh->height*txh->stride/2;
-			pU1 = pV1 = NULL;
-			
+			if (nb_layers == 2){
+				pY1 = (u8 *) data + 3*txh->height*txh->stride/2;
+				pU1 = pV1 = NULL;
+			}			
 			if (txh->raw_memory) {
 				assert(txh->pU);
 				pU = (u8 *) txh->pU;
 				pV = (u8 *) txh->pV;
 			} else {
 				pU = (u8 *) pY + txh->height*txh->stride;
-				pU1 = (u8 *) pY1 + txh->height*txh->stride;
+				if (nb_layers == 2) pU1 = (u8 *) pY1 + txh->height*txh->stride;
 			}
 			
 			switch (txh->pixelformat) {
@@ -1104,7 +1110,7 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 					stride_chroma = stride_luma/2;
 				if (!pV)
 					pV = (u8 *) pU + txh->height * stride_chroma / 2;
-				if (!pV1) 
+				if (nb_layers ==2) if (!pV1) 
 					pV1 = (u8 *) pU1 + txh->height * stride_chroma / 2;
 				break;
 			case GF_PIXEL_NV21:
@@ -1118,7 +1124,7 @@ Bool gf_sc_texture_push_image(GF_TextureHandler *txh, Bool generate_mipmaps, Boo
 				pV = NULL;
 				break;
 			}
-printf("MOOODDEEEEEEEEEEEEE view = %d\n", txh->compositor->mode_view);
+
 #if !defined(GPAC_USE_GLES1X) && !defined(GPAC_USE_GLES2)
 		
 			if (txh->pixelformat==GF_PIXEL_YV12_10 || txh->pixelformat==GF_PIXEL_YUV422_10 ||txh->pixelformat==GF_PIXEL_YUV444_10) {
@@ -1128,26 +1134,26 @@ printf("MOOODDEEEEEEEEEEEEE view = %d\n", txh->compositor->mode_view);
 			}
 #endif
 
-			pY2 = (u8*) malloc( 2*2 * txh->height * stride_chroma);
-			pU2 = (u8*) malloc( 2*txh->height * stride_chroma /2 );
-			pV2 = (u8*) malloc( 2*txh->height * stride_chroma /2);
+			if (nb_layers == 2){
+				pY2 = (u8*) malloc( 2*2 * txh->height * stride_chroma);
+				pU2 = (u8*) malloc( 2*txh->height * stride_chroma /2 );
+				pV2 = (u8*) malloc( 2*txh->height * stride_chroma /2);
 			
-			memcpy(pY2, pY, txh->height*2 * stride_chroma);
-			memcpy(pY2 + txh->height*2 * stride_chroma , pY1, txh->height*2 * stride_chroma);
+				memcpy(pY2, pY, txh->height*2 * stride_chroma);
+				memcpy(pY2 + txh->height*2 * stride_chroma , pY1, txh->height*2 * stride_chroma);
 
-			memcpy(pU2, pU, txh->height*2 * stride_chroma/4);
-			memcpy(pU2 + txh->height*2 * stride_chroma/4 , pU1, txh->height*2 * stride_chroma/4);
+				memcpy(pU2, pU, txh->height*2 * stride_chroma/4);
+				memcpy(pU2 + txh->height*2 * stride_chroma/4 , pU1, txh->height*2 * stride_chroma/4);
 
-			memcpy(pV2, pV, txh->height*2 * stride_chroma/4);
-			memcpy(pV2 + txh->height*2 * stride_chroma/4 , pV1, txh->height*2 * stride_chroma/4);
+				memcpy(pV2, pV, txh->height*2 * stride_chroma/4);
+				memcpy(pV2 + txh->height*2 * stride_chroma/4 , pV1, txh->height*2 * stride_chroma/4);
+			}
 			
 			push_time = gf_sys_clock();
-
-			if (txh->compositor->mode_view == 1){
-				first_load = GF_TRUE;
+			
+			if (txh->compositor->mode_view == 1 && txh->compositor->visual->nb_views==2 && txh->compositor->visual->autostereo_type == GF_3D_STEREO_SIDE && nb_layers == 2){
 				do_tex_image_2d(txh, tx_mode, first_load, pY2, stride_luma, w, h*2, txh->tx_io->pbo_id);
 			}else{
-				//first_load = GF_TRUE;
 				do_tex_image_2d(txh, tx_mode, first_load, pY, stride_luma, w, h, txh->tx_io->pbo_id);
 			}
 			GL_CHECK_ERR
@@ -1167,21 +1173,17 @@ printf("MOOODDEEEEEEEEEEEEE view = %d\n", txh->compositor->mode_view);
 			} 
 			else if (txh->pixelformat == GF_PIXEL_YV12_10 || txh->pixelformat == GF_PIXEL_YV12 ) {
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->u_id);
-				if (txh->compositor->mode_view == 1){
-					//first_load = GF_TRUE;
+				if (txh->compositor->mode_view == 1 && txh->compositor->visual->nb_views==2 && txh->compositor->visual->autostereo_type == GF_3D_STEREO_SIDE && nb_layers ==2){
 					do_tex_image_2d(txh, tx_mode, first_load, pU2, stride_chroma, w/2, h, txh->tx_io->u_pbo_id);
 				}else{
-					//first_load = GF_TRUE;
 					do_tex_image_2d(txh, tx_mode, first_load, pU, stride_chroma, w/2, h/2, txh->tx_io->u_pbo_id);
 				}
 				GL_CHECK_ERR
 
 				glBindTexture(txh->tx_io->gl_type, txh->tx_io->v_id);
-				if (txh->compositor->mode_view == 1){
-					//first_load = GF_TRUE;
+				if (txh->compositor->mode_view == 1 && txh->compositor->visual->nb_views==2 && txh->compositor->visual->autostereo_type == GF_3D_STEREO_SIDE && nb_layers ==2){
 					do_tex_image_2d(txh, tx_mode, first_load, pV2, stride_chroma, w/2, h, txh->tx_io->v_pbo_id);
 				}else{
-					//first_load = GF_TRUE;
 					do_tex_image_2d(txh, tx_mode, first_load, pV, stride_chroma, w/2, h/2, txh->tx_io->v_pbo_id);
 				}
 				GL_CHECK_ERR
@@ -1417,8 +1419,10 @@ Bool gf_sc_texture_get_transform(GF_TextureHandler *txh, GF_Node *tx_transform, 
 
 	Bool ret = 0;
 	gf_mx_init(*mx);
+	int nb_layers;
+	gf_get_nblayers(txh->stream, &nb_layers);
 
-	if (!txh->compositor->visual->current_view) {
+	if (!txh->compositor->visual->current_view && txh->compositor->visual->nb_views==2 && txh->compositor->visual->autostereo_type == GF_3D_STEREO_SIDE && nb_layers == 2) {
 		gf_mx_add_translation(mx, 0, -0.5f, 0);
 		ret = 1;
 	}
