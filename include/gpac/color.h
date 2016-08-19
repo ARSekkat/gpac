@@ -199,7 +199,6 @@ void gf_cmx_set(GF_ColorMatrix *_this,
                 Fixed mgr, Fixed mgg, Fixed mgb, Fixed mga, Fixed tg,
                 Fixed mbr, Fixed mbg, Fixed mbb, Fixed mba, Fixed tb,
                 Fixed mar, Fixed mag, Fixed mab, Fixed maa, Fixed ta);
-
 /*!Inits a matrix from another matrix
  *\param _this color matrix to initialize
  *\param from color matrix to copy from
