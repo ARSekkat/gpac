@@ -229,7 +229,14 @@ Bool gf_mo_get_visual_info(GF_MediaObject *mo, u32 *width, u32 *height, u32 *str
 GF_EXPORT
 void gf_mo_get_nb_views(GF_MediaObject *mo, int * nb_views)
 {
-	*nb_views = mo->nb_views;
+	if (mo) *nb_views = mo->nb_views;
+}
+
+GF_EXPORT
+
+void gf_mo_get_nb_layers(GF_MediaObject *mo, int * nb_layers)
+{
+	if (mo) *nb_layers = mo->nb_layers;
 }
 
 GF_EXPORT
@@ -282,6 +289,10 @@ static void gf_mo_update_visual_info(GF_MediaObject *mo)
 	cap.CapCode = GF_CODEC_NBVIEWS;
 	gf_codec_get_capability(mo->odm->codec, &cap);
 	mo->nb_views = cap.cap.valueInt;
+
+	cap.CapCode = GF_CODEC_NBLAYERS;
+	gf_codec_get_capability(mo->odm->codec, &cap);
+	mo->nb_layers = cap.cap.valueInt;
 
 	if (mo->odm && mo->odm->parentscene->is_dynamic_scene) {
 #ifndef GPAC_DISABLE_VRML

@@ -453,6 +453,9 @@ static GF_Err HEVC_GetCapabilities(GF_BaseDecoder *ifcg, GF_CodecCapability *cap
 		}
 		break;
 	case GF_CODEC_NBVIEWS:
+		capability->cap.valueInt = ctx->nb_views;
+		break;
+	case GF_CODEC_NBLAYERS:
 		capability->cap.valueInt = ctx->nb_layers;
 		break;
 	case GF_CODEC_PIXEL_FORMAT:
@@ -540,7 +543,6 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 
 	if (ctx->direct_output){
 		libOpenHevcGetPictureInfo(ctx->openHevcHandle, &openHevcFrame_FL.frameInfo);
-		if (ctx->nb_layers == 2) libOpenHevcGetPictureInfo(ctx->openHevcHandle, &openHevcFrame_SL.frameInfo);
 	}else{
 		libOpenHevcGetPictureInfoCpy(ctx->openHevcHandle, &openHevcFrame_FL.frameInfo);
 		if (ctx->nb_layers == 2) libOpenHevcGetPictureInfoCpy(ctx->openHevcHandle, &openHevcFrame_SL.frameInfo);
@@ -667,7 +669,15 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 	}
 
 	openHevcFrame_FL.pvY = (void*) outBuffer;
-	if (ctx->nb_layers == 1){
+	if (ctx->nb_layers==2 && ctx->nb_views>1 && !ctx->direct_output){
+		if( chromat_format == YUV420){
+			openHevcFrame_SL.pvY = (void*) (outBuffer +  ctx->stride * ctx->height);
+			openHevcFrame_FL.pvU = (void*) (outBuffer + 2*ctx->stride * ctx->height);
+			openHevcFrame_SL.pvU = (void*) (outBuffer +  9*ctx->stride * ctx->height/4);
+			openHevcFrame_FL.pvV = (void*) (outBuffer + 5*ctx->stride * ctx->height/2);
+			openHevcFrame_SL.pvV = (void*) (outBuffer + 11*ctx->stride * ctx->height/4);
+		}
+	}else{
 		openHevcFrame_FL.pvU = (void*) (outBuffer + ctx->stride * ctx->height);
 		if( chromat_format == YUV420) {
 			openHevcFrame_FL.pvV = (void*) (outBuffer + 5*ctx->stride * ctx->height/4);
@@ -676,17 +686,10 @@ static GF_Err HEVC_flush_picture(HEVCDec *ctx, char *outBuffer, u32 *outBufferLe
 		} else if ( chromat_format == YUV444) {
 			openHevcFrame_FL.pvV = (void*) (outBuffer + 2*ctx->stride * ctx->height);
 		}
-	}else{
-		if( chromat_format == YUV420 ){
-			openHevcFrame_SL.pvY = (void*) (outBuffer +  ctx->stride * ctx->height);
-			openHevcFrame_FL.pvU = (void*) (outBuffer + 2*ctx->stride * ctx->height);
-			openHevcFrame_SL.pvU = (void*) (outBuffer +  9*ctx->stride * ctx->height/4);
-			openHevcFrame_FL.pvV = (void*) (outBuffer + 5*ctx->stride * ctx->height/2);
-			openHevcFrame_SL.pvV = (void*) (outBuffer + 11*ctx->stride * ctx->height/4);
-		}
 	}
+
 	*outBufferLength = 0;
-	if (ctx->nb_layers>1 && ctx->nb_views!=1){
+	if (ctx->nb_layers==2 && ctx->nb_views>1 && !ctx->direct_output){
 		libOpenHevcSetViewLayers(ctx->openHevcHandle, 0);
 		int out1 = libOpenHevcGetOutputCpy(ctx->openHevcHandle, 1, &openHevcFrame_FL);
 		libOpenHevcSetViewLayers(ctx->openHevcHandle, 1);
