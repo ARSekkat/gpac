@@ -956,7 +956,9 @@ static GF_Err X11_SetupGLPixmap(GF_VideoOutput *vout, u32 width, u32 height)
 	XWindow *xWin = (XWindow *)vout->opaque;
 
 	if (xWin->glx_context) {
-		glXMakeCurrent(xWin->display, None, NULL);
+		if (xWin->gl_offscreen) glXMakeCurrent(xWin->display, xWin->gl_offscreen, NULL);
+		else glXMakeCurrent(xWin->display, None, NULL);
+
 		glXDestroyContext(xWin->display, xWin->glx_context);
 		xWin->glx_context = NULL;
 	}
@@ -1154,7 +1156,9 @@ GF_Err X11_ProcessEvent (struct _video_out * vout, GF_Event * evt)
 		case GF_EVENT_SET_CURSOR:
 			break;
 		case GF_EVENT_SET_CAPTION:
-			if (!xWindow->par_wnd) XStoreName (xWindow->display, xWindow->wnd, evt->caption.caption);
+			if (!xWindow->par_wnd && xWindow->wnd && evt->caption.caption) {
+				XStoreName(xWindow->display, xWindow->wnd, "");
+			}
 			break;
 		case GF_EVENT_SHOWHIDE:
 			break;

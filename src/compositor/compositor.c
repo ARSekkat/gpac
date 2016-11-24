@@ -586,8 +586,14 @@ GF_Compositor *gf_sc_new(GF_User *user, Bool self_threaded, GF_Terminal *term)
 	tmp->msg_type |= GF_SR_CFG_INITIAL_RESIZE;
 	/*set default size if owning output*/
 	if (tmp->user && !tmp->user->os_window_handler) {
+		const char *opt;
 		tmp->new_width = SC_DEF_WIDTH;
 		tmp->new_height = SC_DEF_HEIGHT;
+		opt = gf_cfg_get_key(user->config, "Compositor", "DefaultWidth");
+		if (opt) tmp->new_width = atoi(opt);
+		opt = gf_cfg_get_key(user->config, "Compositor", "DefaultHeight");
+		if (opt) tmp->new_height = atoi(opt);
+
 		tmp->msg_type |= GF_SR_CFG_SET_SIZE;
 	}
 
@@ -3060,7 +3066,11 @@ static Bool gf_sc_on_event_ex(GF_Compositor *compositor , GF_Event *event, Bool 
 			compositor may be locked on the video output (flush or whatever)!!
 			*/
 			Bool lock_ok = gf_mx_try_lock(compositor->mx);
-			if ((compositor->display_width!=event->size.width) || (compositor->display_height!=event->size.height)) {
+			if ((compositor->display_width!=event->size.width)
+					|| (compositor->display_height!=event->size.height)
+					|| (compositor->new_width && (compositor->new_width!=event->size.width))
+					|| (compositor->new_width && (compositor->new_height!=event->size.height))
+				) {
 
 				//OSX bug with SDL when requesting 4k window we get max screen height but 4k width ...
 #if defined(GPAC_CONFIG_DARWIN) && !defined(GPAC_IPHONE)
@@ -3072,16 +3082,12 @@ static Bool gf_sc_on_event_ex(GF_Compositor *compositor , GF_Event *event, Bool 
 #endif
 				compositor->new_width = event->size.width;
 				compositor->new_height = event->size.height;
+
 				compositor->msg_type |= GF_SR_CFG_SET_SIZE;
 				if (from_user) compositor->msg_type &= ~GF_SR_CFG_WINDOWSIZE_NOTIF;
 			} else {
 				/*remove pending resize notif but not resize requests*/
 				compositor->msg_type &= ~GF_SR_CFG_WINDOWSIZE_NOTIF;
-	
-				if (compositor->new_width || compositor->new_height) {
-					compositor->msg_type &= ~GF_SR_CFG_SET_SIZE;
-					compositor->new_width = compositor->new_height = 0;
-				}
 			}
 			if (lock_ok) gf_sc_lock(compositor, GF_FALSE);
 		}
