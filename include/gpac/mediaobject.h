@@ -199,6 +199,9 @@ typedef struct
 	s32 srd_y;
 	s32 srd_w;
 	s32 srd_h;
+
+	s32 srd_full_w;
+	s32 srd_full_h;
 	
 	s32 srd_min_x;
 	s32 srd_min_y;
@@ -209,6 +212,7 @@ typedef struct
 	u32 scene_height;
 
 	Bool is_tiled_srd;
+	Bool isonetilefull;
 } GF_MediaObjectVRInfo;
 
 //get SRD and VR info for this object. Returns FALSE if no VR and no SRD info

@@ -380,6 +380,7 @@ typedef struct
 	LPNETCHANNEL on_channel;
 	u32 w,h,x,y, width, height;
 	u32 dependent_group_index;
+	Bool isonetilefull;
 } GF_NetComSRDInfo;
 
 /*GF_NET_CHAN_VISIBILITY_HINT*/

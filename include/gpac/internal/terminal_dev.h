@@ -1200,6 +1200,7 @@ struct _mediaobj
 	Bool is_flipped;
 	u32 sample_rate, num_channels, bits_per_sample, channel_config;
 	u32 srd_x, srd_y, srd_w, srd_h, srd_full_w, srd_full_h;
+	Bool isonetilefull;
 	
 	u32 quality_degradation_hint;
 	u32 nb_views;

@@ -1901,6 +1901,7 @@
 #pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_play) )
 #pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_play_from_to) )
 #pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_stop) )
+#pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_stop_nounregister) )
 #pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_restart) )
 #pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_update_frame) )
 #pragma comment (linker, EXPORT_SYMBOL(gf_sc_texture_release_stream) )

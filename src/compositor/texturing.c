@@ -117,7 +117,6 @@ GF_Err gf_sc_texture_play(GF_TextureHandler *txh, MFURL *url)
 	return gf_sc_texture_play_from_to(txh, url, offset, -1, loop, 0);
 }
 
-
 GF_EXPORT
 void gf_sc_texture_stop(GF_TextureHandler *txh)
 {
@@ -137,6 +136,27 @@ void gf_sc_texture_stop(GF_TextureHandler *txh)
 	/*and deassociate object*/
 	gf_mo_unregister(txh->owner, txh->stream);
 	txh->stream = NULL;
+}
+
+GF_EXPORT
+void gf_sc_texture_stop_nounregister(GF_TextureHandler *txh)
+{
+	if (!txh->is_open) return;
+	/*release texture WITHOUT droping frame*/
+	if (txh->needs_release) {
+		gf_mo_release_data(txh->stream, 0xFFFFFFFF, -1);
+		txh->needs_release = 0;
+		txh->frame = NULL;
+	}
+	gf_sc_invalidate(txh->compositor, NULL);
+	if (gf_mo_stop(txh->stream)) {
+		txh->data = NULL;
+	}
+	txh->is_open = 0;
+
+	/*and deassociate object*/
+	//gf_mo_unregister(txh->owner, txh->stream);
+	//txh->stream = NULL;
 }
 
 GF_EXPORT

@@ -261,6 +261,7 @@ struct __tag_compositor
 	u32 output_width, output_height;
 	Bool output_as_8bit;
 	u8 multiview_mode;
+	Bool isonetilefull;
 	/*scene size if any*/
 	u32 scene_width, scene_height;
 	Bool has_size_info;
@@ -709,6 +710,7 @@ GF_Err gf_sc_texture_play(GF_TextureHandler *txh, MFURL *url);
 GF_Err gf_sc_texture_play_from_to(GF_TextureHandler *txh, MFURL *url, Double start_offset, Double end_offset, Bool can_loop, Bool lock_scene_timeline);
 /*stops associated object*/
 void gf_sc_texture_stop(GF_TextureHandler *txh);
+void gf_sc_texture_stop_nounregister(GF_TextureHandler *txh);
 /*restarts associated object - DO NOT CALL stop/start*/
 void gf_sc_texture_restart(GF_TextureHandler *txh);
 /*common routine for all video texture: fetches a frame and update the 2D texture object */

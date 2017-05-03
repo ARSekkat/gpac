@@ -1357,7 +1357,7 @@ GF_Err MPD_ServiceCommand(GF_InputService *plug, GF_NetworkCommand *com)
 			
 			idx = gf_dash_get_dependent_group_index(mpdin->dash, idx, com->srd.dependent_group_index-1);
 		}		
-		res = gf_dash_group_get_srd_info(mpdin->dash, idx, NULL, &com->srd.x, &com->srd.y, &com->srd.w, &com->srd.h, &com->srd.width, &com->srd.height);
+		res = gf_dash_group_get_srd_info(mpdin->dash, idx, NULL, &com->srd.x, &com->srd.y, &com->srd.w, &com->srd.h, &com->srd.width, &com->srd.height, &com->srd.isonetilefull);
 		return res ? GF_OK : GF_NOT_SUPPORTED;
 	}
 

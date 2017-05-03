@@ -313,6 +313,8 @@ struct __dash_group
 	u32 target_new_rep;
 
 	u32 srd_x, srd_y, srd_w, srd_h, srd_row_idx, srd_col_idx;
+	Bool isonetilefull;
+
 	struct _dash_srd_desc *srd_desc;
 
 	/*mutex for group->cache access (read and write in download)*/
@@ -4312,6 +4314,7 @@ static GF_Err gf_dash_setup_period(GF_DashClient *dash)
 					group->srd_desc = gf_dash_get_srd_desc(dash, id, GF_TRUE);
 					group->srd_desc->srd_fw = w;
 					group->srd_desc->srd_fh = h;
+					if (group->srd_desc->srd_fw == group->srd_w && group->srd_desc->srd_fh == group->srd_h) group->isonetilefull = GF_TRUE;
 				}
 
 			} else {
@@ -4321,6 +4324,7 @@ static GF_Err gf_dash_setup_period(GF_DashClient *dash)
 				break;
 			}
 		}
+
 		if (disabled) {
 			continue;
 		}
@@ -4356,6 +4360,7 @@ static GF_Err gf_dash_setup_period(GF_DashClient *dash)
 					group->srd_desc = gf_dash_get_srd_desc(dash, id, GF_TRUE);
 					group->srd_desc->srd_fw = w;
 					group->srd_desc->srd_fh = h;
+					if (group->srd_desc->srd_fw == group->srd_w && group->srd_desc->srd_fh == group->srd_h) group->isonetilefull = GF_TRUE;
 				}
 			}
 		}
@@ -7600,7 +7605,7 @@ void gf_dash_set_tile_adaptation_mode(GF_DashClient *dash, GF_DASHTileAdaptation
 }
 
 GF_EXPORT
-Bool gf_dash_group_get_srd_info(GF_DashClient *dash, u32 idx, u32 *srd_id, u32 *srd_x, u32 *srd_y, u32 *srd_w, u32 *srd_h, u32 *srd_width, u32 *srd_height)
+Bool gf_dash_group_get_srd_info(GF_DashClient *dash, u32 idx, u32 *srd_id, u32 *srd_x, u32 *srd_y, u32 *srd_w, u32 *srd_h, u32 *srd_width, u32 *srd_height, Bool *isonetilefull)
 {
 	GF_DASH_Group *group = gf_list_get(dash->groups, idx);
 	if (!group || !group->srd_desc) return GF_FALSE;
@@ -7615,7 +7620,7 @@ Bool gf_dash_group_get_srd_info(GF_DashClient *dash, u32 idx, u32 *srd_id, u32 *
 	if (srd_y) (*srd_y) = group->srd_y;
 	if (srd_w) (*srd_w) = group->srd_w;
 	if (srd_h) (*srd_h) = group->srd_h;
-
+	if (isonetilefull) (*isonetilefull) = group->isonetilefull;
 
 	return GF_TRUE;
 }

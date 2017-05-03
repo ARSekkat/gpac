@@ -360,6 +360,7 @@ static void gf_mo_update_visual_info(GF_MediaObject *mo)
 			mo->srd_h = com.srd.h;
 			mo->srd_full_w = com.srd.width;
 			mo->srd_full_h = com.srd.height;
+			mo->isonetilefull = com.srd.isonetilefull;
 
 			if (mo->odm->parentscene->is_dynamic_scene && !mo->odm->parentscene->is_srd) {
 				mo->odm->parentscene->is_srd = GF_TRUE;
@@ -1519,6 +1520,9 @@ Bool gf_mo_get_srd_info(GF_MediaObject *mo, GF_MediaObjectVRInfo *vr_info)
 	vr_info->srd_y = mo->srd_y;
 	vr_info->srd_w = mo->srd_w;
 	vr_info->srd_h = mo->srd_h;
+	vr_info->srd_full_h = mo->srd_full_h;
+	vr_info->srd_full_w = mo->srd_full_w;
+	vr_info->isonetilefull = mo->isonetilefull;
 	vr_info->srd_min_x = scene->srd_min_x;
 	vr_info->srd_min_y = scene->srd_min_y;
 	vr_info->srd_max_x = scene->srd_max_x;
